@@ -1,0 +1,12 @@
+# build output
+build/
+*.o
+*.d
+*.dylib
+
+# macOS
+.DS_Store
+
+# ad-hoc scratch
+*.log
+*.api.txt
