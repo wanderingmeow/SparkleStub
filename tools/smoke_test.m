@@ -49,6 +49,7 @@ static unsigned gChecks = 0, gFailures = 0;
 
 @interface ProbeBasicDriver : SUBasicUpdateDriver
 @property (nonatomic, strong) NSString *probeIvar;
+@property (nonatomic, assign) BOOL reportedNoUpdate;
 @end
 
 @implementation ProbeBasicDriver
@@ -86,7 +87,9 @@ static unsigned gChecks = 0, gFailures = 0;
 - (void)unarchiver:(id<SUUnarchiverProtocol>)u extractedProgress:(double)p { [super unarchiver:u extractedProgress:p]; }
 - (void)installerForHost:(SUHost *)h failedWithError:(NSError *)e { [super installerForHost:h failedWithError:e]; }
 - (void)didFindValidUpdate        { [super didFindValidUpdate]; }
-- (void)didNotFindUpdate          { [super didNotFindUpdate]; }
+// Telegram's ExternalUpdateDriver clears its "Retrieving information..." label
+// here, so -appcastDidFinishLoading: has to report the outcome, not just return.
+- (void)didNotFindUpdate          { self.reportedNoUpdate = YES; [super didNotFindUpdate]; }
 - (void)appcastDidFinishLoading:(SUAppcast *)a { [super appcastDidFinishLoading:a]; }
 // -dealloc/.cxx_destruct are synthesized: this class owns an object, and so must
 // its superclass, or ARC's destructor chain would trap.
@@ -193,6 +196,10 @@ static void CheckKillSwitches(void)
     CHECK([driver isItemNewer:nilItem] == NO, "isItemNewer:");
     CHECK([driver itemContainsValidUpdate:nilItem] == NO, "itemContainsValidUpdate:");
     CHECK([driver mayUpdateAndRestart] == NO, "mayUpdateAndRestart");
+    // The host's "Retrieving information..." state ends in -didNotFindUpdate.
+    [driver appcastDidFinishLoading:appcast];
+    CHECK(driver.reportedNoUpdate == YES,
+          "appcastDidFinishLoading: did not report didNotFindUpdate");
     CHECK([driver versionComparator] == cmp, "versionComparator is not the same-version comparator");
     CHECK([SUBasicUpdateDriver hostSupportsItem:nilItem] == NO, "+hostSupportsItem:");
     SUAppcastItem *delta = (id)@"sentinel";

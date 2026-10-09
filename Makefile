@@ -237,9 +237,15 @@ install: bundle
 	  echo "error: $(notdir $(basename $(TG))) is running -- quit it first"; exit 1; \
 	fi
 	@if [ -e "$(ORIG)" ] && [ "$(FORCE)" != "1" ]; then \
-	  echo "error: $(ORIG) already exists."; \
-	  echo "       It is the only pristine copy. Move it somewhere safe, or use"; \
-	  echo "       FORCE=1 to replace it (destroys it)."; exit 1; \
+	  if nm -gU "$(REAL_FRAMEWORK)/Versions/$(VERSION_DIR)/$(FRAMEWORK)" 2>/dev/null | grep -q SparkleStubMarker; then \
+	    echo "error: a stub is already installed, and $(ORIG) holds the original."; \
+	    echo "       To install a new build: make restore && make install"; \
+	    echo "       (FORCE=1 would move the CURRENT STUB into .orig and lose the original.)"; \
+	  else \
+	    echo "error: $(ORIG) already exists."; \
+	    echo "       It is the only pristine copy. Move it somewhere safe, or use"; \
+	    echo "       FORCE=1 to replace it (destroys it)."; \
+	  fi; exit 1; \
 	fi
 	@[ ! -e "$(ORIG)" ] || rm -rf "$(ORIG)"
 	mv "$(REAL_FRAMEWORK)" "$(ORIG)"

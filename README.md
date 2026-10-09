@@ -73,6 +73,9 @@ implements it because it is the main entry point of this API, in 100 lines.
    nothing; `+[SUBasicUpdateDriver bestItemFromAppcastItems:…]` returns `nil`.
 
 `-[SUUpdateDriver showAlert:]` and the other alert methods display nothing.
+`-[SUBasicUpdateDriver appcastDidFinishLoading:]` still reports the outcome
+through `didNotFindUpdate`: the host's check has to end, it just never ends with
+an update.
 
 Getters that the host uses for logging and UI (`SUHost.name`, `version`,
 `bundlePath`, `-[SPUURLRequest request]`, …) return real values, so callers do
@@ -212,12 +215,15 @@ SPARKLE_STUB_LOG=1 /Applications/Telegram.app/Contents/MacOS/Telegram 2>&1 | gre
 [SparkleStub] initWithUpdater: -- no-op
 [SparkleStub] initWithBundle: -- no-op
 [SparkleStub] parseAppcastItemsFromXMLData (14117 bytes) -- returning 0 items
-[SparkleStub] appcastDidFinishLoading: -- no-op
+[SparkleStub] appcastDidFinishLoading: (0 items) -- reporting no update
 ```
 
 Telegram fetched the feed itself (14 KB) and handed the XML to the parser. The
 parser returned no items, so the driver had nothing to offer: no download,
-extraction, install or alert followed.
+extraction, install or alert followed. `appcastDidFinishLoading:` reports that
+outcome through `didNotFindUpdate`, which is where Telegram leaves its
+"Retrieving information..." state: refusing without reporting leaves the host's
+update window hanging forever.
 
 ## Limits
 

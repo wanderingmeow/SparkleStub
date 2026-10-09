@@ -42,7 +42,17 @@
 - (BOOL)itemContainsSkippedVersion:(SUAppcastItem *)uiItem { return NO; }
 - (BOOL)itemContainsValidUpdate:(SUAppcastItem *)uiItem    { return NO; }
 
-- (void)appcastDidFinishLoading:(SUAppcast *)theAppcast { STUB_LOG_SEL(); }
+// Telegram's driver subclass calls [super appcastDidFinishLoading:] and then
+// waits for the state machine to report the outcome: the host clears its
+// "Retrieving information..." label in -didNotFindUpdate. Real Sparkle decides
+// that here from the parsed items. With no items the answer is fixed, and
+// reporting it is what keeps the host's UI from hanging.
+- (void)appcastDidFinishLoading:(SUAppcast *)theAppcast
+{
+    STUB_LOG(@"appcastDidFinishLoading: (%lu items) -- reporting no update",
+             (unsigned long)theAppcast.items.count);
+    [self didNotFindUpdate];
+}
 - (void)didFindValidUpdate   { STUB_LOG(@"didFindValidUpdate -- unreachable in practice"); }
 - (void)didNotFindUpdate     { STUB_LOG_SEL(); }
 - (NSString *)appCachePath   { return nil; }
